@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Food Nutrition Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🥗 Food Nutrition Chatbot</h1>
+        <form action="/search" method="post">
+            <input type="text" name="food" placeholder="Enter food name" required>
+            <input type="text" name="location" placeholder="Enter your city/location" required>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if food %}
+            <h2>Nutrition info for: <span>{{ food }}</span></h2>
+            {% if nutrition %}
+                <ul>
+                    {% for key, value in nutrition.items() %}
+                        <li><strong>{{ key }}:</strong> {{ value }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No nutrition data found.</p>
+            {% endif %}
+
+            <h2>Nearby places with "{{ food }}"</h2>
+            {% if places %}
+                <ul>
+                    {% for place in places %}
+                        <li><strong>{{ place.name }}</strong> — {{ place.address }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No places found nearby.</p>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>
