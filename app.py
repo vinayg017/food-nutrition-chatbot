@@ -58,4 +58,44 @@ def get_places_data(food_name, location):
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        food_name = request.form["food"]
+        latitude = request.form.get("latitude")
+        longitude = request.form.get("longitude")
+
+        print(f"Food: {food_name}, Location: Latitude={latitude}, Longitude={longitude}")
+
+        # Fetch nutrition info and optionally nearby places using lat/lon
+
+        return render_template("index.html", food=food_name)  # or send nutrition data
+
+    return render_template("index.html")
+@app.route("/location", methods=["POST"])
+def get_location():
+    data = request.get_json()
+    lat = data.get("latitude")
+    lon = data.get("longitude")
+
+    if not lat or not lon:
+        return jsonify({"status": "error", "message": "Missing coordinates"}), 400
+
+    # Google Places API request
+    api_key = "AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8"  # Replace with your actual Google Maps API key
+    url = (
+        f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+        f"?location={lat},{lon}&radius=1500&type=restaurant&key={api_key}"
+    )
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        places_data = response.json()
+        nearby_places = [
+            place["name"] for place in places_data.get("results", [])[:5]
+        ]
+        return jsonify({"status": "success", "places": nearby_places})
+    else:
+        return jsonify({"status": "error", "message": "Google API request failed"}), 500
+
 
