@@ -8,9 +8,12 @@
 <body>
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
+        
         <form action="/search" method="post">
             <input type="text" name="food" placeholder="Enter food name" required>
             <input type="text" name="location" placeholder="Enter your city/location" required>
+            <input type="hidden" name="lat" id="lat">
+            <input type="hidden" name="lon" id="lon">
             <button type="submit">Search</button>
         </form>
 
@@ -37,6 +40,52 @@
                 <p>No places found nearby.</p>
             {% endif %}
         {% endif %}
+
+        <!-- Nearby places using geolocation -->
+        <h3>Nearby Restaurants or Stores (Auto Location)</h3>
+        <ul id="places-list"></ul>
     </div>
+
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(sendNearbyRequest, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function sendNearbyRequest(position) {
+            // Set hidden input values for lat/lon
+            document.getElementById("lat").value = position.coords.latitude;
+            document.getElementById("lon").value = position.coords.longitude;
+
+            fetch("/nearby", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById("places-list");
+                list.innerHTML = "";
+                data.forEach(place => {
+                    const li = document.createElement("li");
+                    li.textContent = place;
+                    list.appendChild(li);
+                });
+            })
+            .catch(error => console.error("Error fetching places:", error));
+        }
+
+        function showError(error) {
+            console.error("Geolocation error:", error);
+        }
+
+        window.onload = getLocation;
+    </script>
 </body>
 </html>
