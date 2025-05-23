@@ -4,9 +4,9 @@ import requests
 
 app = Flask(__name__)
 
-# Your API keys
-USDA_API_KEY = '2gLlm0zQzSdwdrTNU0dd8Wr7TBzqomHJP0Rn7nBq'  # <-- paste your USDA key here
-GOOGLE_MAPS_API_KEY = 'AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8'  # <-- paste your Google Maps key here
+# API keys
+USDA_API_KEY = '2gLlm0zQzSdwdrTNU0dd8Wr7TBzqomHJP0Rn7nBq'
+GOOGLE_MAPS_API_KEY = 'AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8'
 
 # Route for home page
 @app.route('/')
@@ -17,7 +17,6 @@ def home():
 @app.route('/search', methods=['POST'])
 def search():
     food_name = request.form['food']
-    
     location = request.form['location']
 
     # Fetch nutrition data
@@ -49,53 +48,35 @@ def get_places_data(food_name, location):
 
     places = []
     if data.get('results'):
-        for place in data['results'][:5]:  # Limit to 5 places
+        for place in data['results'][:5]:
             places.append({
                 'name': place.get('name'),
                 'address': place.get('formatted_address')
             })
     return places
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        food_name = request.form["food"]
-        latitude = request.form.get("latitude")
-        longitude = request.form.get("longitude")
-
-        print(f"Food: {food_name}, Location: Latitude={latitude}, Longitude={longitude}")
-
-        # Fetch nutrition info and optionally nearby places using lat/lon
-
-        return render_template("index.html", food=food_name)  # or send nutrition data
-
-    return render_template("index.html")
-@app.route("/location", methods=["POST"])
-def get_location():
+# New endpoint to support geolocation-based nearby search
+@app.route("/nearby", methods=["POST"])
+def nearby_places():
     data = request.get_json()
-    lat = data.get("latitude")
-    lon = data.get("longitude")
+    lat = data.get("lat")
+    lon = data.get("lon")
 
     if not lat or not lon:
-        return jsonify({"status": "error", "message": "Missing coordinates"}), 400
+        return jsonify([])
 
-    # Google Places API request
-    api_key = "AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8"  # Replace with your actual Google Maps API key
     url = (
         f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-        f"?location={lat},{lon}&radius=1500&type=restaurant&key={api_key}"
+        f"?location={lat},{lon}&radius=1500&type=restaurant&keyword=food&key={GOOGLE_MAPS_API_KEY}"
     )
 
     response = requests.get(url)
     if response.status_code == 200:
-        places_data = response.json()
-        nearby_places = [
-            place["name"] for place in places_data.get("results", [])[:5]
-        ]
-        return jsonify({"status": "success", "places": nearby_places})
+        results = response.json().get("results", [])
+        names = [place["name"] for place in results[:5]]
+        return jsonify(names)
     else:
-        return jsonify({"status": "error", "message": "Google API request failed"}), 500
+        return jsonify([])
 
-
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
