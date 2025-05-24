@@ -12,8 +12,6 @@
         <form action="/search" method="post">
             <input type="text" name="food" placeholder="Enter food name" required>
             <input type="text" name="location" placeholder="Enter your city/location" required>
-            <input type="hidden" name="lat" id="lat">
-            <input type="hidden" name="lon" id="lon">
             <button type="submit">Search</button>
         </form>
 
@@ -29,7 +27,7 @@
                 <p>No nutrition data found.</p>
             {% endif %}
 
-            <h2>Nearby places with "{{ food }}"</h2>
+            <h2>Nearby places with "{{ food }}" (Based on your location)</h2>
             {% if places %}
                 <ul>
                     {% for place in places %}
@@ -37,7 +35,7 @@
                     {% endfor %}
                 </ul>
             {% else %}
-                <p>No places found nearby.</p>
+                <p>No places found nearby based on the city you entered.</p>
             {% endif %}
         {% endif %}
 
@@ -56,10 +54,6 @@
         }
 
         function sendNearbyRequest(position) {
-            // Set hidden input values for lat/lon
-            document.getElementById("lat").value = position.coords.latitude;
-            document.getElementById("lon").value = position.coords.longitude;
-
             fetch("/nearby", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -72,11 +66,17 @@
             .then(data => {
                 const list = document.getElementById("places-list");
                 list.innerHTML = "";
-                data.forEach(place => {
+                if (data.length > 0) {
+                    data.forEach(place => {
+                        const li = document.createElement("li");
+                        li.textContent = place;
+                        list.appendChild(li);
+                    });
+                } else {
                     const li = document.createElement("li");
-                    li.textContent = place;
+                    li.textContent = "No places found nearby.";
                     list.appendChild(li);
-                });
+                }
             })
             .catch(error => console.error("Error fetching places:", error));
         }

@@ -13,7 +13,7 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8'
 def home():
     return render_template('index.html')
 
-# Route to handle food search
+# Route to handle food search based on city input
 @app.route('/search', methods=['POST'])
 def search():
     food_name = request.form['food']
@@ -22,7 +22,7 @@ def search():
     # Fetch nutrition data
     nutrition_data = get_nutrition_data(food_name)
 
-    # Fetch nearby places
+    # Fetch nearby places based on city/location
     places_data = get_places_data(food_name, location)
 
     return render_template('index.html', food=food_name, nutrition=nutrition_data, places=places_data)
@@ -32,11 +32,11 @@ def get_nutrition_data(food_name):
     response = requests.get(url)
     data = response.json()
 
-    if data['foods']:
+    if data.get('foods'):
         food = data['foods'][0]
         nutrients = {}
-        for nutrient in food['foodNutrients']:
-            nutrients[nutrient['nutrientName']] = nutrient['value']
+        for nutrient in food.get('foodNutrients', []):
+            nutrients[nutrient.get('nutrientName')] = nutrient.get('value', 0)
         return nutrients
     else:
         return None
@@ -73,7 +73,7 @@ def nearby_places():
     response = requests.get(url)
     if response.status_code == 200:
         results = response.json().get("results", [])
-        names = [place["name"] for place in results[:5]]
+        names = [place.get("name") for place in results[:5]]
         return jsonify(names)
     else:
         return jsonify([])
