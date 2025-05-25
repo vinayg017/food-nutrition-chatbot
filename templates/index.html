@@ -8,7 +8,7 @@
 <body>
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
-        
+
         <form action="/search" method="post">
             <input type="text" name="food" placeholder="Enter food name" required>
             <input type="text" name="location" placeholder="Enter your city/location" required>
@@ -18,11 +18,22 @@
         {% if food %}
             <h2>Nutrition info for: <span>{{ food }}</span></h2>
             {% if nutrition %}
-                <ul>
-                    {% for key, value in nutrition.items() %}
-                        <li><strong>{{ key }}:</strong> {{ value }}</li>
-                    {% endfor %}
-                </ul>
+                <table border="1" cellpadding="6" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nutrient</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in nutrition.items() %}
+                            <tr>
+                                <td><strong>{{ key }}</strong></td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
                 <p>No nutrition data found.</p>
             {% endif %}
@@ -31,7 +42,10 @@
             {% if places %}
                 <ul>
                     {% for place in places %}
-                        <li><strong>{{ place.name }}</strong> — {{ place.address }}</li>
+                        <li>
+                            <strong>{{ place.name }}</strong><br>
+                            <small>{{ place.address }}</small>
+                        </li>
                     {% endfor %}
                 </ul>
             {% else %}

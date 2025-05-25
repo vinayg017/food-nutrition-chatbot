@@ -19,6 +19,8 @@ def search():
     food_name = request.form['food']
     location = request.form['location']
 
+    print(f"User search: food='{food_name}', location='{location}'")
+
     # Fetch nutrition data
     nutrition_data = get_nutrition_data(food_name)
 
@@ -32,19 +34,53 @@ def get_nutrition_data(food_name):
     response = requests.get(url)
     data = response.json()
 
+    # Nutrient-to-unit mapping
+    nutrient_units = {
+        "Protein": "g",
+        "Total lipid (fat)": "g",
+        "Carbohydrate, by difference": "g",
+        "Energy": "kcal",
+        "Total Sugars": "g",
+        "Fiber, total dietary": "g",
+        "Calcium, Ca": "mg",
+        "Iron, Fe": "mg",
+        "Sodium, Na": "mg",
+        "Vitamin A, IU": "IU",
+        "Vitamin C, total ascorbic acid": "mg",
+        "Cholesterol": "mg",
+        "Fatty acids, total trans": "g",
+        "Fatty acids, total saturated": "g",
+        "Fatty acids, total monounsaturated": "g",
+        "Fatty acids, total polyunsaturated": "g"
+    }
+
     if data.get('foods'):
         food = data['foods'][0]
         nutrients = {}
         for nutrient in food.get('foodNutrients', []):
-            nutrients[nutrient.get('nutrientName')] = nutrient.get('value', 0)
+            name = nutrient.get('nutrientName')
+            value = nutrient.get('value', 0)
+
+            # Add unit if available
+            unit = nutrient_units.get(name, "")
+            if unit:
+                nutrients[name] = f"{value} {unit}"
+            else:
+                nutrients[name] = f"{value}"
+
         return nutrients
     else:
         return None
 
+
 def get_places_data(food_name, location):
     url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={food_name}+near+{location}&key={GOOGLE_MAPS_API_KEY}"
+    print(f"Requesting places data from: {url}")
+
     response = requests.get(url)
+    print(f"Places API response status: {response.status_code}")
     data = response.json()
+    print(f"Places API response data: {data}")
 
     places = []
     if data.get('results'):
@@ -53,6 +89,8 @@ def get_places_data(food_name, location):
                 'name': place.get('name'),
                 'address': place.get('formatted_address')
             })
+    else:
+        print("No nearby places found.")
     return places
 
 # New endpoint to support geolocation-based nearby search
@@ -62,20 +100,27 @@ def nearby_places():
     lat = data.get("lat")
     lon = data.get("lon")
 
+    print(f"Received geolocation data: lat={lat}, lon={lon}")
+
     if not lat or not lon:
+        print("Latitude or longitude not provided.")
         return jsonify([])
 
     url = (
         f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
         f"?location={lat},{lon}&radius=1500&type=restaurant&keyword=food&key={GOOGLE_MAPS_API_KEY}"
     )
+    print(f"Requesting nearby places data from: {url}")
 
     response = requests.get(url)
+    print(f"Nearby Places API response status: {response.status_code}")
     if response.status_code == 200:
         results = response.json().get("results", [])
+        print(f"Nearby Places API response data: {results}")
         names = [place.get("name") for place in results[:5]]
         return jsonify(names)
     else:
+        print("Nearby Places API request failed.")
         return jsonify([])
 
 if __name__ == "__main__":
