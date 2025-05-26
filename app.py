@@ -13,21 +13,17 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8'
 def home():
     return render_template('index.html')
 
-# Route to handle food search based on city input
+# Route to handle food search (nutrition only)
 @app.route('/search', methods=['POST'])
 def search():
     food_name = request.form['food']
-    location = request.form['location']
-
-    print(f"User search: food='{food_name}', location='{location}'")
+    print(f"User search: food='{food_name}'")
 
     # Fetch nutrition data
     nutrition_data = get_nutrition_data(food_name)
 
-    # Fetch nearby places based on city/location
-    places_data = get_places_data(food_name, location)
-
-    return render_template('index.html', food=food_name, nutrition=nutrition_data, places=places_data)
+    # No need to fetch places based on city input
+    return render_template('index.html', food=food_name, nutrition=nutrition_data)
 
 def get_nutrition_data(food_name):
     url = f"https://api.nal.usda.gov/fdc/v1/foods/search?query={food_name}&api_key={USDA_API_KEY}"
@@ -60,8 +56,6 @@ def get_nutrition_data(food_name):
         for nutrient in food.get('foodNutrients', []):
             name = nutrient.get('nutrientName')
             value = nutrient.get('value', 0)
-
-            # Add unit if available
             unit = nutrient_units.get(name, "")
             if unit:
                 nutrients[name] = f"{value} {unit}"
@@ -72,28 +66,7 @@ def get_nutrition_data(food_name):
     else:
         return None
 
-
-def get_places_data(food_name, location):
-    url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query={food_name}+near+{location}&key={GOOGLE_MAPS_API_KEY}"
-    print(f"Requesting places data from: {url}")
-
-    response = requests.get(url)
-    print(f"Places API response status: {response.status_code}")
-    data = response.json()
-    print(f"Places API response data: {data}")
-
-    places = []
-    if data.get('results'):
-        for place in data['results'][:5]:
-            places.append({
-                'name': place.get('name'),
-                'address': place.get('formatted_address')
-            })
-    else:
-        print("No nearby places found.")
-    return places
-
-# New endpoint to support geolocation-based nearby search
+# Endpoint to support geolocation-based nearby search
 @app.route("/nearby", methods=["POST"])
 def nearby_places():
     data = request.get_json()
