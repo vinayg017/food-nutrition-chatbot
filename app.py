@@ -26,9 +26,7 @@ init_db()
 
 @app.route('/')
 def home():
-    if 'username' in session:
-        return render_template('index.html', username=session['username'])
-    return redirect(url_for('login'))
+    return render_template('index.html', username=session.get('username'))
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -65,20 +63,22 @@ def login():
             flash('Invalid username or password.')
     return render_template('login.html')
 
+@app.route('/guest')
+def guest():
+    session.pop('username', None)
+    return redirect(url_for('home'))
+
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     flash('You have been logged out.')
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 @app.route('/search', methods=['POST'])
 def search():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
     food_name = request.form['food']
     nutrition_data = get_nutrition_data(food_name)
-    return render_template('index.html', food=food_name, nutrition=nutrition_data, username=session['username'])
+    return render_template('index.html', food=food_name, nutrition=nutrition_data, username=session.get('username'))
 
 def get_nutrition_data(food_name):
     url = f"https://api.nal.usda.gov/fdc/v1/foods/search?query={food_name}&api_key={USDA_API_KEY}"
@@ -123,7 +123,6 @@ def nearby_places():
         return jsonify(names)
     return jsonify([])
 
-# ✅ ✅ ✅ FIXED RENDER ISSUE HERE
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
