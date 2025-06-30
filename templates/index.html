@@ -8,6 +8,18 @@
 <body>
     <button id="dark-mode-toggle">Toggle Dark Mode</button>
 
+    <!-- Top nav for login/signup/guest -->
+    <div style="text-align: right; margin: 10px 20px;">
+        {% if username %}
+            <span>👋 Welcome, {{ username }}!</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a> |
+            <a href="{{ url_for('signup') }}">Signup</a> |
+            <a href="{{ url_for('guest') }}">Continue as Guest</a>
+        {% endif %}
+    </div>
+
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
 
@@ -89,7 +101,6 @@
             console.error("Geolocation error:", error);
         }
 
-        // Dark mode toggle
         document.getElementById("dark-mode-toggle").addEventListener("click", () => {
             document.body.classList.toggle("dark");
         });
