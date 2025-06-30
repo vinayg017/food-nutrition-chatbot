@@ -8,21 +8,20 @@
 <body>
     <button id="dark-mode-toggle">Toggle Dark Mode</button>
 
-    <!-- Top nav for login/signup/guest -->
+    <!-- Top nav with modal triggers -->
     <div style="text-align: right; margin: 10px 20px;">
         {% if username %}
             <span>👋 Welcome, {{ username }}!</span>
             <a href="{{ url_for('logout') }}">Logout</a>
         {% else %}
-            <a href="{{ url_for('login') }}">Login</a> |
-            <a href="{{ url_for('signup') }}">Signup</a> |
+            <a href="#" onclick="openModal('loginModal')">Login</a> |
+            <a href="#" onclick="openModal('signupModal')">Signup</a> |
             <a href="{{ url_for('guest') }}">Continue as Guest</a>
         {% endif %}
     </div>
 
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
-
         <form action="/search" method="post">
             <input type="text" name="food" placeholder="Enter food name" required>
             <button type="submit">Search</button>
@@ -30,24 +29,16 @@
 
         {% if food %}
             <h2>Nutrition info for: <span>{{ food }}</span></h2>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
-                📌 All nutrition values shown are per 100 grams of the food item.
-            </p>
+            <p style="font-size: 0.9em; color: #666;">📌 All nutrition values are per 100g of food.</p>
 
             {% if nutrition %}
                 <table>
                     <thead>
-                        <tr>
-                            <th>Nutrient</th>
-                            <th>Amount</th>
-                        </tr>
+                        <tr><th>Nutrient</th><th>Amount</th></tr>
                     </thead>
                     <tbody>
                         {% for key, value in nutrition.items() %}
-                            <tr>
-                                <td><strong>{{ key }}</strong></td>
-                                <td>{{ value }}</td>
-                            </tr>
+                            <tr><td><strong>{{ key }}</strong></td><td>{{ value }}</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -60,7 +51,40 @@
         <ul id="places-list"></ul>
     </div>
 
+    <!-- MODALS -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Login</h2>
+            <form action="/login" method="post">
+                <input type="text" name="username" placeholder="Username" required><br>
+                <input type="password" name="password" placeholder="Password" required><br>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('signupModal')">&times;</span>
+            <h2>Signup</h2>
+            <form action="/signup" method="post">
+                <input type="text" name="username" placeholder="Choose a username" required><br>
+                <input type="password" name="password" placeholder="Choose a password" required><br>
+                <button type="submit">Signup</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
     <script>
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
         function getLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(sendNearbyRequest, showError);
@@ -108,4 +132,5 @@
         window.onload = getLocation;
     </script>
 </body>
+
 </html>
