@@ -6,15 +6,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <!-- Dark mode toggle -->
     <button id="dark-mode-toggle">Toggle Dark Mode</button>
 
     <!-- Top nav -->
-    <div class="top-nav">
+    <div class="top-nav" style="text-align: right; margin: 10px 20px;">
         {% if username %}
             <span>👋 Welcome, {{ username }}!</span>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('logout') }}" style="margin-left: 10px;">Logout</a>
         {% else %}
-            <button onclick="openModal()">Login / Signup</button>
+            <button onclick="openModal()" style="margin-right: 10px;">Login / Signup</button>
         {% endif %}
     </div>
 
@@ -22,15 +23,17 @@
     <div id="auth-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Welcome</h2>
+            <h2>Welcome!</h2>
+            <p style="margin-bottom: 20px;">Choose an option to continue:</p>
             <div class="modal-buttons">
-                <a href="{{ url_for('login') }}"><button class="auth-btn">Login</button></a>
-                <a href="{{ url_for('signup') }}"><button class="auth-btn">Signup</button></a>
+                <a href="{{ url_for('login') }}"><button class="auth-btn">Login</button></a><br><br>
+                <a href="{{ url_for('signup') }}"><button class="auth-btn">Signup</button></a><br><br>
                 <a href="{{ url_for('guest') }}"><button class="auth-btn">Continue as Guest</button></a>
             </div>
         </div>
     </div>
 
+    <!-- Main container -->
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
 
@@ -42,13 +45,11 @@
         {% if food %}
             <h2>Nutrition info for: <span>{{ food }}</span></h2>
             <p class="note">📌 All nutrition values shown are per 100 grams of the food item.</p>
+
             {% if nutrition %}
                 <table>
                     <thead>
-                        <tr>
-                            <th>Nutrient</th>
-                            <th>Amount</th>
-                        </tr>
+                        <tr><th>Nutrient</th><th>Amount</th></tr>
                     </thead>
                     <tbody>
                         {% for key, value in nutrition.items() %}
@@ -68,6 +69,7 @@
         <ul id="places-list"></ul>
     </div>
 
+    <!-- Scripts -->
     <script>
         function getLocation() {
             if (navigator.geolocation) {
@@ -97,9 +99,7 @@
                         list.appendChild(li);
                     });
                 } else {
-                    const li = document.createElement("li");
-                    li.textContent = "No places found nearby.";
-                    list.appendChild(li);
+                    list.innerHTML = "<li>No places found nearby.</li>";
                 }
             })
             .catch(error => console.error("Error fetching places:", error));
@@ -109,15 +109,14 @@
             console.error("Geolocation error:", error);
         }
 
-        // Modal popup
         function openModal() {
             document.getElementById("auth-modal").style.display = "block";
         }
+
         function closeModal() {
             document.getElementById("auth-modal").style.display = "none";
         }
 
-        // Dark mode toggle
         document.getElementById("dark-mode-toggle").addEventListener("click", () => {
             document.body.classList.toggle("dark");
         });
