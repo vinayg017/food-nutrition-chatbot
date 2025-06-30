@@ -1,53 +1,96 @@
 import os
-from flask import Flask, render_template, request, jsonify
+import sqlite3
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import requests
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
 # API keys
 USDA_API_KEY = '2gLlm0zQzSdwdrTNU0dd8Wr7TBzqomHJP0Rn7nBq'
 GOOGLE_MAPS_API_KEY = 'AIzaSyCxKM0h_5wWpcJ9ENYtIXLbYwVbVPAzPd8'
 
-# Route for home page
+# Database setup
+def init_db():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL
+                )''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
 @app.route('/')
 def home():
-    return render_template('index.html')
+    if 'username' in session:
+        return render_template('index.html', username=session['username'])
+    return redirect(url_for('login'))
 
-# Route to handle food search (nutrition only)
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        try:
+            c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            conn.commit()
+            flash('Signup successful. Please log in.')
+            return redirect(url_for('login'))
+        except sqlite3.IntegrityError:
+            flash('Username already exists.')
+        finally:
+            conn.close()
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+        user = c.fetchone()
+        conn.close()
+        if user:
+            session['username'] = username
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid username or password.')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    flash('You have been logged out.')
+    return redirect(url_for('login'))
+
 @app.route('/search', methods=['POST'])
 def search():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
     food_name = request.form['food']
-    print(f"User search: food='{food_name}'")
-
-    # Fetch nutrition data
     nutrition_data = get_nutrition_data(food_name)
-
-    # No need to fetch places based on city input
-    return render_template('index.html', food=food_name, nutrition=nutrition_data)
+    return render_template('index.html', food=food_name, nutrition=nutrition_data, username=session['username'])
 
 def get_nutrition_data(food_name):
     url = f"https://api.nal.usda.gov/fdc/v1/foods/search?query={food_name}&api_key={USDA_API_KEY}"
     response = requests.get(url)
     data = response.json()
 
-    # Nutrient-to-unit mapping
     nutrient_units = {
-        "Protein": "g",
-        "Total lipid (fat)": "g",
-        "Carbohydrate, by difference": "g",
-        "Energy": "kcal",
-        "Total Sugars": "g",
-        "Fiber, total dietary": "g",
-        "Calcium, Ca": "mg",
-        "Iron, Fe": "mg",
-        "Sodium, Na": "mg",
-        "Vitamin A, IU": "IU",
-        "Vitamin C, total ascorbic acid": "mg",
-        "Cholesterol": "mg",
-        "Fatty acids, total trans": "g",
-        "Fatty acids, total saturated": "g",
-        "Fatty acids, total monounsaturated": "g",
-        "Fatty acids, total polyunsaturated": "g"
+        "Protein": "g", "Total lipid (fat)": "g", "Carbohydrate, by difference": "g", "Energy": "kcal",
+        "Total Sugars": "g", "Fiber, total dietary": "g", "Calcium, Ca": "mg", "Iron, Fe": "mg",
+        "Sodium, Na": "mg", "Vitamin A, IU": "IU", "Vitamin C, total ascorbic acid": "mg", "Cholesterol": "mg",
+        "Fatty acids, total trans": "g", "Fatty acids, total saturated": "g", 
+        "Fatty acids, total monounsaturated": "g", "Fatty acids, total polyunsaturated": "g"
     }
 
     if data.get('foods'):
@@ -57,44 +100,28 @@ def get_nutrition_data(food_name):
             name = nutrient.get('nutrientName')
             value = nutrient.get('value', 0)
             unit = nutrient_units.get(name, "")
-            if unit:
-                nutrients[name] = f"{value} {unit}"
-            else:
-                nutrients[name] = f"{value}"
-
+            nutrients[name] = f"{value} {unit}" if unit else f"{value}"
         return nutrients
-    else:
-        return None
+    return None
 
-# Endpoint to support geolocation-based nearby search
 @app.route("/nearby", methods=["POST"])
 def nearby_places():
     data = request.get_json()
     lat = data.get("lat")
     lon = data.get("lon")
-
-    print(f"Received geolocation data: lat={lat}, lon={lon}")
-
     if not lat or not lon:
-        print("Latitude or longitude not provided.")
         return jsonify([])
 
     url = (
         f"https://maps.googleapis.com/maps/api/place/nearbysearch/json"
         f"?location={lat},{lon}&radius=1500&type=restaurant&keyword=food&key={GOOGLE_MAPS_API_KEY}"
     )
-    print(f"Requesting nearby places data from: {url}")
-
     response = requests.get(url)
-    print(f"Nearby Places API response status: {response.status_code}")
     if response.status_code == 200:
         results = response.json().get("results", [])
-        print(f"Nearby Places API response data: {results}")
         names = [place.get("name") for place in results[:5]]
         return jsonify(names)
-    else:
-        print("Nearby Places API request failed.")
-        return jsonify([])
+    return jsonify([])
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True)
