@@ -18,6 +18,10 @@
 
         {% if food %}
             <h2>Nutrition info for: <span>{{ food }}</span></h2>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                📌 All nutrition values shown are per 100 grams of the food item.
+            </p>
+
             {% if nutrition %}
                 <table>
                     <thead>
