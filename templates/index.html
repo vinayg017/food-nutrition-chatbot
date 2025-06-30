@@ -6,10 +6,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <button id="dark-mode-toggle">Toggle Dark Mode</button>
+
     <div class="container">
         <h1>🥗 Food Nutrition Chatbot</h1>
 
-        <!-- Removed city input -->
         <form action="/search" method="post">
             <input type="text" name="food" placeholder="Enter food name" required>
             <button type="submit">Search</button>
@@ -18,7 +19,7 @@
         {% if food %}
             <h2>Nutrition info for: <span>{{ food }}</span></h2>
             {% if nutrition %}
-                <table border="1" cellpadding="6" cellspacing="0">
+                <table>
                     <thead>
                         <tr>
                             <th>Nutrient</th>
@@ -39,7 +40,6 @@
             {% endif %}
         {% endif %}
 
-        <!-- Nearby places using geolocation -->
         <h3>Nearby Restaurants or Stores (Auto Location)</h3>
         <ul id="places-list"></ul>
     </div>
@@ -84,6 +84,11 @@
         function showError(error) {
             console.error("Geolocation error:", error);
         }
+
+        // Dark mode toggle
+        document.getElementById("dark-mode-toggle").addEventListener("click", () => {
+            document.body.classList.toggle("dark");
+        });
 
         window.onload = getLocation;
     </script>
